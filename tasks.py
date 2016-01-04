@@ -11,7 +11,7 @@ from courses import list_courses, list_course_files, get_doc_url
 
 @app.task
 def main():
-    courses = list(list_courses().values())[:15]
+    courses = list(list_courses().values())[:50]
     for course in courses:
         get_course.delay(course)
     logger.info("%i courses were enqued", len(courses))

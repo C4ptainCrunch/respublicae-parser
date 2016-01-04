@@ -1,2 +1,5 @@
 requests.sqlite
 *.cookie
+__pycache__
+ve
+ve3
