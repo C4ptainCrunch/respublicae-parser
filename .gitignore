@@ -3,3 +3,4 @@ requests.sqlite
 __pycache__
 ve
 ve3
+config.py

@@ -2,8 +2,10 @@ import requests
 import requests_cache
 from bs4 import BeautifulSoup
 import base64
+import config
 
-SESSION = open('session.cookie').read().strip()
+session = requests.Session()
+
 DOMAIN = base64.b64decode(b'YmV0YS5yZXNwdWJsaWNhZS5iZQ==').decode('ascii') # the domain name we are scraping
 
 HEADERS = {
@@ -17,12 +19,29 @@ HEADERS = {
 requests_cache.install_cache('requests', allowable_methods=['GET', 'POST', 'HEAD'])
 
 
-def list_courses():
-    cookies = {
-        '__cfduid': open('cfuuid.cookie').read().strip(),
-        'ci_session': SESSION,
-    }
+def login():
+    with requests_cache.disabled():
+        session.get('http://%s/users/login' % DOMAIN)
 
+        data = {
+            'email': config.email,
+            'password': config.password,
+        }
+
+        headers = {
+            "Referer": "http://%s/users/login" % DOMAIN
+        }
+        headers.update(HEADERS)
+
+        r = session.post(
+            'http://%s/users/login' % DOMAIN,
+            headers=HEADERS, data=data
+        )
+
+        return r.headers.get("refresh") is not None
+
+
+def list_courses():
     headers = {
         'Accept': '*/*',
         'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
@@ -37,9 +56,9 @@ def list_courses():
 
     for i in range(0, 5000, 30):
         data = 'terms=&start=%i' % i
-        resp = requests.post(
+        resp = session.post(
             'http://%s/ajax/get_courses' % DOMAIN,
-            headers=headers, cookies=cookies, data=data
+            headers=headers, data=data
         )
         courses += resp.json()['data']
 
@@ -49,13 +68,9 @@ def list_courses():
 
 
 def list_course_files(course_id):
-    cookies = {
-        'ci_session': SESSION,
-    }
-
-    resp = requests.get(
+    resp = session.get(
         'http://%s/documents/%s' % (DOMAIN, course_id),
-        headers=HEADERS, cookies=cookies
+        headers=HEADERS
     )
     resp.encoding = 'utf-8'
 
@@ -76,10 +91,6 @@ def list_course_files(course_id):
 
 
 def get_doc_url(page_url):
-    cookies = {
-        'ci_session': SESSION,
-    }
-
-    resp = requests.get(page_url, headers=HEADERS, cookies=cookies)
+    resp = session.get(page_url, headers=HEADERS)
     soup = BeautifulSoup(resp.text, "html.parser")
     return soup.find("p", class_="download-button-wrapper").a['href']

@@ -6,12 +6,13 @@ logger = get_task_logger(__name__)
 app = Celery('hello')
 app.config_from_object('celeryconfig')
 
-from courses import list_courses, list_course_files, get_doc_url
+from courses import list_courses, list_course_files, get_doc_url, login
 
 
 @app.task
 def main():
-    courses = list(list_courses().values())[:50]
+    login()
+    courses = list(list_courses().values())[:10]
     for course in courses:
         get_course.delay(course)
     logger.info("%i courses were enqued", len(courses))
@@ -28,7 +29,7 @@ def get_course(course):
 @app.task
 def get_file_data(file):
     name = file['name']
-    page_url = file['page_url']
+    page_url = file['pageurl']
 
     url = get_doc_url(page_url)
 
