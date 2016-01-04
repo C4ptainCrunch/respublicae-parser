@@ -3,7 +3,7 @@ import requests_cache
 from bs4 import BeautifulSoup
 import base64
 
-SESSION = open('session.cookie').read()
+SESSION = open('session.cookie').read().strip()
 DOMAIN = base64.b64decode(b'YmV0YS5yZXNwdWJsaWNhZS5iZQ==').decode('ascii') # the domain name we are scraping
 
 HEADERS = {
@@ -19,6 +19,7 @@ requests_cache.install_cache('requests', allowable_methods=['GET', 'POST', 'HEAD
 
 def list_courses():
     cookies = {
+        '__cfduid': open('cfuuid.cookie').read().strip(),
         'ci_session': SESSION,
     }
 

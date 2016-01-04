@@ -1,2 +1,2 @@
 requests.sqlite
-session.cookie
+*.cookie
