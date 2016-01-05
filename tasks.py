@@ -10,9 +10,9 @@ from courses import list_courses, list_course_files, get_doc_url, login
 
 
 @app.task
-def main():
+def main(limit=None):
     login()
-    courses = list(list_courses().values())[:10]
+    courses = list(list_courses().values())[:limit]
     for course in courses:
         get_course.delay(course)
     logger.info("%i courses were enqued", len(courses))
