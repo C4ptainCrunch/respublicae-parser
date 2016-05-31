@@ -2,6 +2,8 @@ import courses
 import sqlite3
 from contextlib import contextmanager
 import re
+from multiprocessing import Pool
+import requests
 
 import logging
 logger = logging.getLogger()
@@ -77,6 +79,38 @@ def get_download_ids():
             logger.warning("Document failed: %s, %s" % (course_id, document_id))
 
 
+def _download_file(url, fname):
+    r = requests.get(url, stream=True)
+    with open(fname, 'wb') as f:
+        for chunk in r.iter_content(chunk_size=1024):
+            if chunk:
+                f.write(chunk)
+
+def _dl_from_id(download_id):
+    try:
+        url = "http://" + courses.DOMAIN + "/files/download/%i/document" % download_id
+        fname = "./data/" + str(download_id)
+        _download_file(url, fname)
+        return True
+    except Exception as e:
+        logger.warning(str(download_id) + " " + str(e))
+        return False
+
+
+def download_documents():
+    with db("db.sqlite") as cursor:
+        documents = list(cursor.execute("SELECT download_id FROM document WHERE was_downloaded=0 AND download_id IS NOT NULL LIMIT 10"))
+
+    p = Pool(3)
+    download_ids = [int(d[0]) for d in documents]
+    res = p.map(_dl_from_id, download_ids)
+
+    z = list(zip([1 if r else 0 for r in res], download_ids))
+
+    with db("db.sqlite") as cursor:
+        cursor.executemany("UPDATE document SET was_downloaded=? WHERE download_id=?", z)
+
+
 if __name__ == '__main__':
     # logger.info("Refreshing course list...")
     # refresh_courses()
@@ -84,10 +118,16 @@ if __name__ == '__main__':
     # logger.info("Refreshing document list...")
     # refresh_documents()
 
+    # with db("db.sqlite") as cursor:
+    #     res = cursor.execute("SELECT COUNT(*) FROM document WHERE download_id IS NULL")
+    #     n_docs = int(list(res)[0][0])
+    # logger.info("Retrieving document urls. %i to go..." % n_docs)
+    # get_download_ids()
+
     with db("db.sqlite") as cursor:
-        res = cursor.execute("SELECT COUNT(*) FROM document WHERE download_id IS NULL")
+        res = cursor.execute("SELECT COUNT(*) FROM document WHERE was_downloaded=0 AND download_id IS NOT NULL")
         n_docs = int(list(res)[0][0])
-    logger.info("Retrieving document urls. %i to go..." % n_docs)
-    get_download_ids()
+    logger.info("Retrieving document files. %i to go..." % n_docs)
+    download_documents()
 
     logger.info("Done.")
