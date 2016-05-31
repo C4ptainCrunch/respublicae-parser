@@ -4,7 +4,6 @@ from bs4 import BeautifulSoup
 import base64
 import config
 
-session = requests.Session()
 
 DOMAIN = base64.b64decode(b'YmV0YS5yZXNwdWJsaWNhZS5iZQ==').decode('ascii') # the domain name we are scraping
 
@@ -21,6 +20,7 @@ requests_cache.install_cache('requests', allowable_methods=['GET', 'POST', 'HEAD
 
 def login():
     with requests_cache.disabled():
+        session = requests.Session()
         session.get('http://%s/users/login' % DOMAIN)
 
         data = {
@@ -38,10 +38,9 @@ def login():
             headers=HEADERS, data=data
         )
 
-        return r.headers.get("refresh") is not None
+        return session
 
-
-def list_courses():
+def list_courses(session):
     headers = {
         'Accept': '*/*',
         'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
@@ -67,7 +66,7 @@ def list_courses():
     return courses_dict
 
 
-def list_course_files(course_id):
+def list_course_files(session, course_id):
     resp = session.get(
         'http://%s/documents/%s' % (DOMAIN, course_id),
         headers=HEADERS
@@ -90,7 +89,8 @@ def list_course_files(course_id):
     return files
 
 
-def get_doc_url(page_url):
+def get_doc_url(session, page_url):
     resp = session.get(page_url, headers=HEADERS)
     soup = BeautifulSoup(resp.text, "html.parser")
-    return soup.find("p", class_="download-button-wrapper").a['href']
+    u = soup.find("p", class_="download-button-wrapper").a['href']
+    return u
