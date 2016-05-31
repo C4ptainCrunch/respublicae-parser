@@ -119,7 +119,7 @@ def download_documents():
                 AND course.slug IN ("""+slugs_str+""")
         """))
 
-    p = Pool(5, _init_pool)
+    p = Pool(10, _init_pool)
     download_ids = [int(d[0]) for d in documents]
     try:
         res = p.map(_dl_from_id, download_ids)
