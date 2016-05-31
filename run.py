@@ -99,7 +99,7 @@ def _dl_from_id(download_id):
 
 def download_documents():
     with db("db.sqlite") as cursor:
-        documents = list(cursor.execute("SELECT download_id FROM document WHERE was_downloaded=0 AND download_id IS NOT NULL LIMIT 10"))
+        documents = list(cursor.execute("SELECT download_id FROM document WHERE was_downloaded=0 AND download_id IS NOT NULL"))
 
     p = Pool(3)
     download_ids = [int(d[0]) for d in documents]
