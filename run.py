@@ -103,7 +103,10 @@ def download_documents():
 
     p = Pool(3)
     download_ids = [int(d[0]) for d in documents]
-    res = p.map(_dl_from_id, download_ids)
+    try:
+        res = p.map(_dl_from_id, download_ids)
+    except Exception as e:
+        logger.warning("Error while mapping documents" + str(e))
 
     z = list(zip([1 if r else 0 for r in res], download_ids))
 
