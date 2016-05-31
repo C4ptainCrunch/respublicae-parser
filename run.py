@@ -4,6 +4,7 @@ from contextlib import contextmanager
 import re
 from multiprocessing import Pool
 import requests
+import os
 
 import logging
 logger = logging.getLogger()
@@ -79,8 +80,8 @@ def get_download_ids():
             logger.warning("Document failed: %s, %s" % (course_id, document_id))
 
 
-def _download_file(url, fname):
-    r = requests.get(url, stream=True)
+def _download_file(s, url, fname):
+    r = s.get(url, stream=True)
     with open(fname, 'wb') as f:
         for chunk in r.iter_content(chunk_size=1024):
             if chunk:
@@ -90,18 +91,35 @@ def _dl_from_id(download_id):
     try:
         url = "http://" + courses.DOMAIN + "/files/download/%i/document" % download_id
         fname = "./data/" + str(download_id)
-        _download_file(url, fname)
+        if not os.path.exists(fname):
+            _download_file(s, url, fname)
         return True
     except Exception as e:
         logger.warning(str(download_id) + " " + str(e))
         return False
 
+def _init_pool():
+    global s
+    s = requests.Session()
 
 def download_documents():
-    with db("db.sqlite") as cursor:
-        documents = list(cursor.execute("SELECT download_id FROM document WHERE was_downloaded=0 AND download_id IS NOT NULL"))
+    with open("slugs") as sl:
+        slugs = list(map(lambda x: x.strip(), sl.readlines()))
 
-    p = Pool(3)
+    slugs_str = ", ".join(["'"+s+"'" for s in slugs])
+    with db("db.sqlite") as cursor:
+        documents = list(cursor.execute("""
+            SELECT download_id
+            FROM document
+            JOIN course ON
+                course.id = document.course_id
+            WHERE
+                was_downloaded=0
+                AND download_id IS NOT NULL
+                AND course.slug IN ("""+slugs_str+""")
+        """))
+
+    p = Pool(5, _init_pool)
     download_ids = [int(d[0]) for d in documents]
     try:
         res = p.map(_dl_from_id, download_ids)
