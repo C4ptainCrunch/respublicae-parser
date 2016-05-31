@@ -1,3 +1,4 @@
+data/
 requests.sqlite
 *.cookie
 __pycache__

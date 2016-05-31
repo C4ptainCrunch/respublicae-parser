@@ -112,22 +112,38 @@ def download_documents():
 
 
 if __name__ == '__main__':
-    # logger.info("Refreshing course list...")
-    # refresh_courses()
+    import argparse
 
-    # logger.info("Refreshing document list...")
-    # refresh_documents()
+    parser = argparse.ArgumentParser(description='Mouhahaha')
+    parser.add_argument('--courses', '-c', dest='refresh_courses', action='store_true')
+    parser.add_argument('--docs', '-d', dest='refesh_docs', action='store_true')
+    parser.add_argument('--urls', '-u', dest='get_urls', action='store_true')
+    parser.add_argument('--get', '-g', dest='dl', action='store_true')
 
-    # with db("db.sqlite") as cursor:
-    #     res = cursor.execute("SELECT COUNT(*) FROM document WHERE download_id IS NULL")
-    #     n_docs = int(list(res)[0][0])
-    # logger.info("Retrieving document urls. %i to go..." % n_docs)
-    # get_download_ids()
+    parser.add_argument('--all', '-a', dest='all', action='store_true')
 
-    with db("db.sqlite") as cursor:
-        res = cursor.execute("SELECT COUNT(*) FROM document WHERE was_downloaded=0 AND download_id IS NOT NULL")
-        n_docs = int(list(res)[0][0])
-    logger.info("Retrieving document files. %i to go..." % n_docs)
-    download_documents()
+    args = parser.parse_args()
+
+    if args.all or args.refresh_courses:
+        logger.info("Refreshing course list...")
+        refresh_courses()
+
+    if args.all or args.refesh_docs:
+        logger.info("Refreshing document list...")
+        refresh_documents()
+
+    if args.all or args.get_urls:
+        with db("db.sqlite") as cursor:
+            res = cursor.execute("SELECT COUNT(*) FROM document WHERE download_id IS NULL")
+            n_docs = int(list(res)[0][0])
+        logger.info("Retrieving document urls. %i to go..." % n_docs)
+        get_download_ids()
+
+    if args.all or args.dl:
+        with db("db.sqlite") as cursor:
+            res = cursor.execute("SELECT COUNT(*) FROM document WHERE was_downloaded=0 AND download_id IS NOT NULL")
+            n_docs = int(list(res)[0][0])
+        logger.info("Retrieving document files. %i to go..." % n_docs)
+        download_documents()
 
     logger.info("Done.")
