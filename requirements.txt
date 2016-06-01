@@ -1,4 +1,2 @@
-celery[redis]
 BeautifulSoup4
 requests
-requests_cache

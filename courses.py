@@ -1,5 +1,4 @@
 import requests
-import requests_cache
 from bs4 import BeautifulSoup
 import base64
 import config
@@ -15,30 +14,26 @@ HEADERS = {
     'Connection': 'keep-alive',
 }
 
-requests_cache.install_cache('requests', allowable_methods=['GET', 'POST', 'HEAD'])
-
-
 def login():
-    with requests_cache.disabled():
-        session = requests.Session()
-        session.get('http://%s/users/login' % DOMAIN)
+    session = requests.Session()
+    session.get('http://%s/users/login' % DOMAIN)
 
-        data = {
-            'email': config.email,
-            'password': config.password,
-        }
+    data = {
+        'email': config.email,
+        'password': config.password,
+    }
 
-        headers = {
-            "Referer": "http://%s/users/login" % DOMAIN
-        }
-        headers.update(HEADERS)
+    headers = {
+        "Referer": "http://%s/users/login" % DOMAIN
+    }
+    headers.update(HEADERS)
 
-        r = session.post(
-            'http://%s/users/login' % DOMAIN,
-            headers=HEADERS, data=data
-        )
+    r = session.post(
+        'http://%s/users/login' % DOMAIN,
+        headers=HEADERS, data=data
+    )
 
-        return session
+    return session
 
 def list_courses(session):
     headers = {
