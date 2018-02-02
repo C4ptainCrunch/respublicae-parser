@@ -15,6 +15,7 @@ steam_handler.setLevel(logging.INFO)
 steam_handler.setFormatter(formatter)
 logger.addHandler(steam_handler)
 
+
 @contextmanager
 def db(fname):
     try:
@@ -24,9 +25,11 @@ def db(fname):
         conn.commit()
         conn.close()
 
+
 def _slugify(string):
     match = re.match(r'(\w{3,4})-(\w)(\d{3,4})', string.lower())
     return "%s-%s-%s" % match.groups()
+
 
 def refresh_courses():
     s = courses.login()
@@ -38,15 +41,18 @@ def refresh_courses():
         ]
         cursor.executemany("INSERT INTO course VALUES (?, ?, ?)", db_courses)
 
+
 def _document_id_from_url(url):
     domain = courses.DOMAIN.replace('.', r'\.')
     match = re.match(r'http://' + domain + r'/documents/\d+/publication/(\d+)', url)
     return match.groups()[-1]
 
+
 def _download_id_from_url(url):
     domain = courses.DOMAIN.replace('.', r'\.')
     match = re.match(r'http://' + domain + r'/files/download/(\d+)/document', url)
     return match.groups()[-1]
+
 
 def refresh_documents():
     s = courses.login()
@@ -87,6 +93,7 @@ def _download_file(s, url, fname):
             if chunk:
                 f.write(chunk)
 
+
 def _dl_from_id(download_id):
     try:
         url = "http://" + courses.DOMAIN + "/files/download/%i/document" % download_id
@@ -98,9 +105,11 @@ def _dl_from_id(download_id):
         logger.warning(str(download_id) + " " + str(e))
         return False
 
+
 def _init_pool():
     global s
     s = requests.Session()
+
 
 def download_documents():
     with open("slugs") as sl:

@@ -1,10 +1,9 @@
 import requests
 from bs4 import BeautifulSoup
-import base64
 import config
 
 
-DOMAIN = base64.b64decode(b'YmV0YS5yZXNwdWJsaWNhZS5iZQ==').decode('ascii') # the domain name we are scraping
+DOMAIN = 'beta.respublicae.be'
 
 HEADERS = {
     'Host': DOMAIN,
@@ -13,6 +12,7 @@ HEADERS = {
     'Accept-Language': 'en-US,en;q=0.5',
     'Connection': 'keep-alive',
 }
+
 
 def login():
     session = requests.Session()
@@ -28,12 +28,13 @@ def login():
     }
     headers.update(HEADERS)
 
-    r = session.post(
+    session.post(
         'http://%s/users/login' % DOMAIN,
         headers=HEADERS, data=data
     )
 
     return session
+
 
 def list_courses(session):
     headers = {
