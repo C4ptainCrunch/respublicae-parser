@@ -5,6 +5,7 @@ import re
 from multiprocessing import Pool
 import requests
 import os
+import cgi
 
 import logging
 logger = logging.getLogger()
@@ -86,9 +87,15 @@ def get_download_ids():
             logger.warning("Document failed: %s, %s" % (course_id, document_id))
 
 
-def _download_file(s, url, fname):
+def _download_file(s, url, write_path):
     r = s.get(url, stream=True)
-    with open(fname, 'wb') as f:
+    header = r.headers['Content-Disposition']
+    value, params = cgi.parse_header(header)
+    filename = params['filename'].strip()
+    _, extension = os.path.splitext(filename)
+
+    write_path += extension
+    with open(write_path, 'wb') as f:
         for chunk in r.iter_content(chunk_size=1024):
             if chunk:
                 f.write(chunk)
@@ -97,9 +104,8 @@ def _download_file(s, url, fname):
 def _dl_from_id(download_id):
     try:
         url = "http://" + courses.DOMAIN + "/files/download/%i/document" % download_id
-        fname = "./data/" + str(download_id)
-        if not os.path.exists(fname):
-            _download_file(s, url, fname)
+        write_path = "./data/" + str(download_id)
+        _download_file(s, url, write_path)
         return True
     except Exception as e:
         logger.warning(str(download_id) + " " + str(e))
@@ -112,20 +118,13 @@ def _init_pool():
 
 
 def download_documents():
-    with open("slugs") as sl:
-        slugs = list(map(lambda x: x.strip(), sl.readlines()))
-
-    slugs_str = ", ".join(["'"+s+"'" for s in slugs])
     with db("db.sqlite") as cursor:
         documents = list(cursor.execute("""
             SELECT download_id
             FROM document
-            JOIN course ON
-                course.id = document.course_id
             WHERE
                 was_downloaded=0
                 AND download_id IS NOT NULL
-                AND course.slug IN ("""+slugs_str+""")
         """))
 
     p = Pool(10, _init_pool)
